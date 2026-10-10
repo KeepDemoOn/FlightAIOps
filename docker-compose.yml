@@ -1,0 +1,32 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_DB: airops
+      POSTGRES_USER: airops
+      POSTGRES_PASSWORD: airops
+    ports: ["5432:5432"]
+    healthcheck:
+      test: ["CMD-SHELL","pg_isready -U airops -d airops"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+  backend:
+    build: ./backend
+    env_file:
+      - .env
+    environment:
+      DEMO_MODE: "true"
+      LLM_PROVIDER: ollama
+    ports: ["8000:8000"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+  frontend:
+    build: ./frontend
+    ports: ["5173:80"]
+    depends_on: [backend]
+  ollama:
+    image: ollama/ollama:latest
+    profiles: ["local-llm"]
+    ports: ["11434:11434"]
